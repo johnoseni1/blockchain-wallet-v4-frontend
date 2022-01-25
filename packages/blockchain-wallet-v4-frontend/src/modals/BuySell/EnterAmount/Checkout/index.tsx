@@ -177,7 +177,10 @@ class Checkout extends PureComponent<Props> {
             paymentType: BSPaymentTypes.BANK_TRANSFER
           })
           break
-        case BSPaymentTypes.BANK_ACCOUNT:
+        case BSPaymentTypes.APPLE_PAY:
+          this.props.buySellActions.createOrder({
+            paymentType: BSPaymentTypes.APPLE_PAY
+          })
           break
         default:
           break

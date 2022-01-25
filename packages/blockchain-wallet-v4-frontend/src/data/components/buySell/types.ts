@@ -128,6 +128,7 @@ export type BuySellState = {
   account: RemoteDataType<string, BSAccountType>
   accumulatedTrades: RemoteDataType<string, Array<TradeAccumulatedItem>>
   addBank: boolean | undefined
+  applePayPaymentToken: string | undefined
   balances: RemoteDataType<string, BSBalancesType>
   buyQuote: RemoteDataType<string, BuyQuoteStateType>
   card: RemoteDataType<string, BSCardType>

@@ -14,6 +14,7 @@ import { CoinType, FiatCurrenciesType, FiatType, WalletCurrencyType } from '../.
 import { NabuCustodialProductType, ProductTypes, WithdrawResponseType } from '../custodial/types'
 import { SwapOrderStateType, SwapOrderType, SwapUserLimitsType } from '../swap/types'
 import {
+  ApplePayInfoResponseType,
   BSAccountType,
   BSBalancesType,
   BSCardType,
@@ -34,7 +35,9 @@ import {
   CardAcquirer,
   FiatEligibleType,
   NabuAddressType,
-  TradesAccumulatedResponse
+  TradesAccumulatedResponseType,
+  ValidateApplePayMerchantePayloadType,
+  ValidateApplePayMerchantResponseType
 } from './types'
 
 export default ({
@@ -123,17 +126,27 @@ export default ({
       url: nabuUrl
     })
 
-  const createBSOrder = (
-    pair: BSPairsType,
-    action: BSOrderActionType,
-    pending: boolean,
-    input: BSMoneyType,
-    output: BSMoneyType,
-    paymentType: BSPaymentMethodType['type'],
-    period?: RecurringBuyPeriods,
-    paymentMethodId?: BSCardType['id'],
+  const createBSOrder = ({
+    action,
+    input,
+    output,
+    pair,
+    paymentMethodId,
+    paymentType,
+    pending,
+    period,
+    quoteId
+  }: {
+    action: BSOrderActionType
+    input: BSMoneyType
+    output: BSMoneyType
+    pair: BSPairsType
+    paymentMethodId?: BSCardType['id']
+    paymentType: BSPaymentMethodType['type']
+    pending: boolean
+    period?: RecurringBuyPeriods
     quoteId?: string
-  ): BSOrderType =>
+  }): BSOrderType =>
     authorizedPost({
       contentType: 'application/json',
       data: {
@@ -514,10 +527,33 @@ export default ({
       url: nabuUrl
     })
 
-  const getAccumulatedTrades = (product: NabuCustodialProductType): TradesAccumulatedResponse =>
+  const getAccumulatedTrades = (product: NabuCustodialProductType): TradesAccumulatedResponseType =>
     authorizedGet({
       contentType: 'application/json',
       endPoint: `/trades/accumulated?product=${product}`,
+      ignoreQueryParams: true,
+      url: nabuUrl
+    })
+
+  const getApplePayInfo = (currency: FiatType): ApplePayInfoResponseType =>
+    authorizedGet({
+      contentType: 'application/json',
+      endPoint: `/payments/apple-pay/info?currency=${currency}`,
+      ignoreQueryParams: true,
+      url: nabuUrl
+    })
+
+  const validateApplePayMerchant = ({
+    paymentMethodID,
+    validationURL
+  }: ValidateApplePayMerchantePayloadType): ValidateApplePayMerchantResponseType =>
+    authorizedPost({
+      contentType: 'application/json',
+      data: {
+        paymentMethodID,
+        validationURL
+      },
+      endPoint: `/payments/apple-pay/validate-merchant`,
       ignoreQueryParams: true,
       url: nabuUrl
     })
@@ -534,6 +570,7 @@ export default ({
     deleteRecurringBuy,
     deleteSavedAccount,
     getAccumulatedTrades,
+    getApplePayInfo,
     getBSBalances,
     getBSCard,
     getBSCards,
@@ -556,6 +593,7 @@ export default ({
     getUnifiedSellTrades,
     submitBSCardDetailsToEverypay,
     updateBankAccountLink,
+    validateApplePayMerchant,
     withdrawBSFunds
   }
 }

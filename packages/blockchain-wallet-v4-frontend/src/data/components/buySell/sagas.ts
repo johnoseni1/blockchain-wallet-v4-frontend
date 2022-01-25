@@ -7,6 +7,7 @@ import { call, cancel, delay, fork, put, race, retry, select, take } from 'redux
 import { Remote } from '@core'
 import { APIType } from '@core/network/api'
 import {
+  ApplePayInfoResponseType,
   BSAccountType,
   BSCardStateType,
   BSCardType,
@@ -320,6 +321,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
     }
   }
 
+  // TODO APPLE PAY GET INFO AND SAVE IT ON THE STORE
   const createBSOrder = function* ({ payload }: ReturnType<typeof A.createOrder>) {
     const { paymentMethodId, paymentType } = payload
     const values: T.BSCheckoutFormValuesType = yield select(
@@ -421,18 +423,56 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
         delete output.amount
       }
 
-      const buyOrder: BSOrderType = yield call(
-        api.createBSOrder,
-        pair.pair,
-        orderType,
-        true,
+      if (paymentType === BSPaymentTypes.APPLE_PAY) {
+        const applePayInfo: ApplePayInfoResponseType = yield call(api.getApplePayInfo, fiat)
+
+        const request: ApplePayJS.ApplePayPaymentRequest = {
+          countryCode: applePayInfo.merchantBankCountry,
+          currencyCode: fiat,
+          merchantCapabilities: ['supports3DS'],
+          supportedNetworks: ['visa', 'masterCard'],
+          total: { amount: input.amount, label: 'Blockchain.com' }
+        }
+
+        const session = new ApplePaySession(3, request)
+
+        session.onvalidatemerchant = function* (event) {
+          const merchantSession = yield call(api.validateApplePayMerchant, {
+            paymentMethodID: applePayInfo.paymentMethodID,
+            validationURL: event.validationURL
+          })
+
+          session.completeMerchantValidation(merchantSession)
+
+          session.onpaymentauthorized = function* (event) {
+            const result = {
+              status: ApplePaySession.STATUS_SUCCESS
+            }
+
+            session.completePayment(result)
+
+            yield put(A.setApplePayPaymentToken(JSON.stringify(event.payment.token)))
+          }
+
+          session.oncancel = () => {
+            // TODO send user to checkout enter amount
+          }
+
+          session.begin()
+        }
+      }
+
+      const buyOrder: BSOrderType = yield call(api.createBSOrder, {
+        action: orderType,
         input,
         output,
-        paymentType,
-        period,
+        pair: pair.pair,
         paymentMethodId,
-        buyQuote?.quote?.quoteId
-      )
+        paymentType,
+        pending: true,
+        period,
+        quoteId: buyQuote?.quote?.quoteId
+      })
 
       yield put(actions.form.stopSubmit(FORM_BS_CHECKOUT))
       yield put(A.fetchOrders())
@@ -501,6 +541,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
     yield put(A.fetchOrders())
   }
 
+  // TODO USE APPLE PAY PAYMENT TOKEN
   const confirmOrder = function* ({ payload }: ReturnType<typeof A.confirmOrder>) {
     const { order, paymentMethodId } = payload
     try {

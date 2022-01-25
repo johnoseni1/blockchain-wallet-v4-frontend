@@ -395,6 +395,23 @@ export type TradeAccumulatedItem = {
   termType: TermType
 }
 
-export type TradesAccumulatedResponse = {
+export type TradesAccumulatedResponseType = {
   tradesAccumulated: Array<TradeAccumulatedItem>
+}
+
+export type ApplePayInfoResponseType = {
+  apiKey: string
+  applePayMerchantID: string
+  cardAcquirerName: Omit<CardAcquirerName, 'STRIPE'>
+  merchantBankCountry: string
+  paymentMethodID: string
+}
+
+export type ValidateApplePayMerchantePayloadType = {
+  paymentMethodID: string
+  validationURL: string
+}
+
+export type ValidateApplePayMerchantResponseType = {
+  applePayPayload: string
 }

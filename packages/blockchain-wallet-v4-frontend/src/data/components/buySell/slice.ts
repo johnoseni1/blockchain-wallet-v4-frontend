@@ -48,6 +48,7 @@ const initialState: BuySellState = {
   account: Remote.NotAsked,
   accumulatedTrades: Remote.NotAsked,
   addBank: undefined,
+  applePayPaymentToken: undefined,
   balances: Remote.NotAsked,
   buyQuote: Remote.NotAsked,
   card: Remote.NotAsked,
@@ -345,7 +346,28 @@ const buySellSlice = createSlice({
       state.methods = Remote.Loading
     },
     fetchPaymentMethodsSuccess: (state, action: PayloadAction<BSPaymentMethodsType>) => {
-      state.methods = Remote.Success(action.payload)
+      // REMOVE THIS
+      const payload = {
+        ...action.payload,
+        methods: [
+          ...action.payload.methods,
+          {
+            currency: 'EUR',
+            eligible: true,
+            limits: {
+              max: '30000',
+              min: '500'
+            },
+            subTypes: ['VISA', 'MASTERCARD'],
+            type: 'APPLE_PAY',
+            visible: true
+          }
+        ]
+      }
+
+      state.methods = Remote.Success(payload)
+
+      // state.methods = Remote.Success(action.payload)
     },
     fetchQuote: (
       state,
@@ -441,6 +463,9 @@ const buySellSlice = createSlice({
       state,
       action: PayloadAction<{ paymentMethodTokens: { [key: string]: string } }>
     ) => {},
+    setApplePayPaymentToken: (state, action: PayloadAction<string>) => {
+      state.applePayPaymentToken = action.payload
+    },
     setBuyCrypto: (state, action: PayloadAction<string>) => {},
     setFiatCurrency: (state, action: PayloadAction<FiatType>) => {
       state.fiatCurrency = action.payload

@@ -25,6 +25,10 @@ const RightArrowIcon = styled(Icon)<{
     `}
 `
 
+const PaymentBox = styled(Box)`
+  min-height: 80px;
+`
+
 const Payment: React.FC<Props> = (props: Props) => {
   const nextStep = props.hasPaymentAccount ? 'LINKED_PAYMENT_ACCOUNTS' : 'PAYMENT_METHODS'
 
@@ -50,7 +54,7 @@ const Payment: React.FC<Props> = (props: Props) => {
           />
         )}
       </SectionTitle>
-      <Box role='button' data-e2e='paymentMethodSelect' onClick={onPaymentMethodClick}>
+      <PaymentBox role='button' data-e2e='paymentMethodSelect' onClick={onPaymentMethodClick}>
         <DisplayPaymentIcon showBackground={!props.method}>
           {getIcon(props.method, props.isSddFlow)}
         </DisplayPaymentIcon>
@@ -62,7 +66,7 @@ const Payment: React.FC<Props> = (props: Props) => {
             <RightArrowIcon cursor name='arrow-back' size='20px' color='grey600' />
           </PaymentArrowContainer>
         )}
-      </Box>
+      </PaymentBox>
     </>
   )
 }

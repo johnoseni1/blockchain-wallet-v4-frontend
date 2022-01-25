@@ -88,6 +88,7 @@ class CheckoutConfirm extends PureComponent<Props> {
     }
 
     switch (this.props.order.paymentType) {
+      // TODO add case for Apple Pay
       case BSPaymentTypes.FUNDS:
         const available = sbBalances[inputCurrency]?.available || '0'
         if (new BigNumber(available).isGreaterThanOrEqualTo(this.props.order.inputQuantity)) {
