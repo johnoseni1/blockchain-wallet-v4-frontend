@@ -75,21 +75,21 @@ export const determineAuthenticationFlow = function* (skipSessionCheck?: boolean
     // check if merge and upgrade flows are enabled and execute them if needed
     yield call(checkAndExecuteMergeAndUpgradeFlows, productAuthenticatingInto, authMagicLink)
 
-    // detect if device/session verification is required or can be bypassed
-    // if device/session checks are not required, determine which product specific
-    // authentication flow is required and execute
+    // We no longer use device verification, all logins will
+    // call 'authorize verify device' with verification email
     switch (true) {
       // EXCHANGE AUTHENTICATION AND DEVICE VERIFICATION
+      // We always want to prompt for device verification
+      // To avoid to tabs being opened for login
       case productAuthenticatingInto === ProductAuthOptions.EXCHANGE:
-        // determine if we need to verify the login attempt from another device or
-        // continue login from the same device
-        if (currentLoginSession !== authMagicLink.session_id && !skipSessionCheck) {
+        if (!skipSessionCheck) {
           // EXCHANGE DEVICE VERIFICATION
           // Exchange only logins don't require any challenges and passing
           // `true` means we can confirm device verification right away
           yield put(actions.auth.authorizeVerifyDevice(true))
           yield put(actions.form.change(LOGIN_FORM, 'step', LoginSteps.VERIFY_MAGIC_LINK))
-        } else {
+        }
+        if (skipSessionCheck) {
           // EXCHANGE AUTHENTICATION
           // set state with all exchange login information
           yield put(actions.cache.exchangeEmail(exchangeData?.email))
@@ -109,13 +109,22 @@ export const determineAuthenticationFlow = function* (skipSessionCheck?: boolean
         }
         break
       // WALLET DEVICE VERIFICATION
-      case productAuthenticatingInto === ProductAuthOptions.WALLET &&
-        currentLoginSession !== authMagicLink.session_id:
+      // We always want to prompt for device verification
+      // To avoid to tabs being opened for login
+      case (productAuthenticatingInto === ProductAuthOptions.WALLET &&
+        // Verification link is opened in a different client or browser
+        currentLoginSession !== authMagicLink.session_id) ||
+        // Verification link is opened in same browser
+        // Check that this isn't the tab polling for account info
+        (currentLoginSession === authMagicLink.session_id && !skipSessionCheck):
         yield put(actions.auth.authorizeVerifyDevice(undefined))
         yield put(actions.form.change(LOGIN_FORM, 'step', LoginSteps.VERIFY_MAGIC_LINK))
         break
-      // WALLET AUTHENTICATION FLOW
-      default:
+      case productAuthenticatingInto === ProductAuthOptions.WALLET &&
+        // If current browser matches browser that originally triggered device verification
+        // And this is the same browser doing account data polling
+        currentLoginSession === authMagicLink.session_id &&
+        skipSessionCheck:
         // grab all the data from the JSON wallet data
         // store data in the cache and update form values to be used to submit login
         yield put(actions.cache.emailStored(walletData?.email))
@@ -133,6 +142,9 @@ export const determineAuthenticationFlow = function* (skipSessionCheck?: boolean
           })
         )
         yield put(actions.form.change(LOGIN_FORM, 'step', LoginSteps.ENTER_PASSWORD_WALLET))
+        break
+      default:
+        yield put(actions.form.change(LOGIN_FORM, 'step', LoginSteps.ENTER_EMAIL_GUID))
         break
     }
     yield put(actions.auth.analyticsMagicLinkParsed())
